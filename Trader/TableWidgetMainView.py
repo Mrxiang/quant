@@ -15,11 +15,13 @@ import Utils
 from AddDialog import AddStockDialog
 import tushare as ts
 import pandas as pd
+
+from Trader import Trader
 from Utils import  *
 
 class Ui_MainWindow(object):
     updateSignal = pyqtSignal(object)  #pyqt5信号要定义为类属性
-
+    TraderAlive = False
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
@@ -152,7 +154,7 @@ class Ui_MainWindow(object):
         print("更新表格")
         print( data.shape, data )
         # self.setItem(0, 0, QTableWidgetItem(data))  # 设置表格内容(行， 列) 文字
-        self.df= pd.read_csv(Utils.realstock_csv)
+        # self.df= pd.read_csv(Utils.realstock_csv)
         table_rows = self.df.shape[0]
         table_columns= self.df.shape[1]
         self.tableWidget.setColumnCount(table_columns)
@@ -193,10 +195,11 @@ class Ui_MainWindow(object):
 
     def startUnattend(self):
         print("开启无人值守")
+        self.TraderAlive=True
 
     def stopUnattend(self):
         print("停止无人值守")
-
+        self.TraderAlive =False
 
     def startRealTime(self):
         print("开启实时监测")
@@ -211,7 +214,8 @@ class Ui_MainWindow(object):
         print("每秒钟运行检测")
         # self.dateEdit.setDate( QDate.currentDate())
         # self.timeEdit.setTime(QTime.currentTime())
-        self.df=pd.read_csv(Utils.realstock_csv)
+        # self.df=pd.read_csv(Utils.realstock_csv)
+        # 1.获取数据
         self.colum = [str(x) for x in self.df['code'].tolist()]
         print(self.colum)
         try:
@@ -220,7 +224,41 @@ class Ui_MainWindow(object):
             print("实时数据",realData)
         except Exception as e:
             print(e)
+
+        # 2. 是否执行无人值守
+        if self.TraderAlive == True:
+            print("Trader working")
+            table_rows = self.df.shape[0]
+            table_columns= self.df.shape[1]
+            for index, row in self.df.iterrows():
+                print( index, row)
+                if row['选中']==True:
+                    # 如果交易规则是买入, 还没有执行, 当前的价格小于等于 设置的买入价格 .则执行买入
+                    if row['交易规则'] =='买入' and row['执行结果']=='nan' and row['price'] <= row['买入价格'] :
+                        Trader.buy( row['code'], row['price'], row['买入数量'])
+                    #如果交易规则是先买后卖, 还没有执行, 当前的价格小于等于 设置的买入价格 .则执行买入
+                    elif row['交易规则']=='先买后卖' and row['执行结果']=='nan' and row['price']<= row['买入价格']:
+                        Trader.buy(row['code'], row['price'], row['买入数量'])
+                    # 如果交易规则是先卖后买, 还没有执行, 当前的价格小于等于 设置的买入价格 .则执行买入
+                    elif row['交易规则']=='先卖后买' and row['执行结果']=='已卖' and row['price']<= row['买入价格']:
+                        Trader.buy(row['code'], row['price'], row['买入数量'])
+
+                    elif row['交易规则']=='卖出' and row['执行结果']=='nan' and row['price']>= row['卖出价格']:
+                        Trader.sell(row['code'], row['price'], row['买入数量'])
+                    elif row['交易规则']=='先卖后买' and row['执行结果']=='nan' and row['price']>= row['卖出价格']:
+                        Trader.sell(row['code'], row['price'], row['买入数量'])
+                    elif row['交易规则'] == '先买后卖' and row['执行结果'] == '已买' and row['price'] >= row['卖出价格']:
+                        Trader.sell(row['code'], row['price'], row['买入数量'])
+                else:
+                    print("未选中")
+
+        else:
+            print("Trader Sleep")
+        # 3. 是否更新表格
         self.updateSignal.emit( realData)  # 发射信号
+
+
+
         global  timer
         timer =threading.Timer(1, self.realtdata_timer)
         timer.start()
