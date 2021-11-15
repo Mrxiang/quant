@@ -153,11 +153,10 @@ class Ui_MainWindow(object):
                     self.tableWidget.setItem( row, col, newItem)
 
 
-    def updateTableWidget(self, data):
+    def updateTableWidget(self):
         print("更新表格")
-        print( data.shape, data )
-        # self.setItem(0, 0, QTableWidgetItem(data))  # 设置表格内容(行， 列) 文字
-        # self.df= pd.read_csv(Utils.realstock_csv)
+        print( self.df.shape, self.df )
+
         table_rows = self.df.shape[0]
         table_columns= self.df.shape[1]
         self.tableWidget.setColumnCount(table_columns)
@@ -165,13 +164,14 @@ class Ui_MainWindow(object):
         self.tableWidget.setRowCount(table_rows)
 
 
-        for row in range(data.shape[0]):
+        for row in range(self.df.shape[0]):
             for col in range( 2,7):
-                newItem = QTableWidgetItem(str(data.loc[row][col]))
+                newItem = QTableWidgetItem(str(self.df.loc[row][col]))
                 newItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
                 self.tableWidget.setItem( row, col, newItem)
 
     def itemEdit(self):
+        print("修改编辑框")
         curRow= self.tableWidget.currentRow()
         curCol= self.tableWidget.currentColumn()
         print( "编辑了 ", curRow, curCol)
@@ -182,6 +182,7 @@ class Ui_MainWindow(object):
         self.df.to_csv( Utils.realstock_csv, index=False)
 
     def checkChange(self, state):
+        print("修改选择框")
         curRow = self.tableWidget.currentRow()
         curCol = self.tableWidget.currentColumn()
         print("选择框 ", curRow, curCol)
@@ -192,6 +193,7 @@ class Ui_MainWindow(object):
         self.df.to_csv( Utils.realstock_csv, index=False)
 
     def comboChange(self, index):
+        print("修改列表框")
         curRow = self.tableWidget.currentRow()
         curCol = self.tableWidget.currentColumn()
         print("列表框 ", curRow, curCol, index )
@@ -233,7 +235,7 @@ class Ui_MainWindow(object):
         self.timeEdit.setTime( QTime.currentTime())
         self.updateSignal.connect(self.updateTableWidget )
         global  timer
-        timer =threading.Timer(1, self.realtdata_timer)
+        timer =threading.Timer(10, self.realtdata_timer)
         timer.start()
 
     def realtdata_timer(self):
@@ -245,19 +247,25 @@ class Ui_MainWindow(object):
         self.colum = [str(x) for x in self.df['code'].tolist()]
         print(self.colum)
         try:
-            realData = ts.get_realtime_quotes(self.colum)
-            realData=realData[['code','name', 'open','pre_close','price','high','low']]
-            print("实时数据",realData)
+            self.realData = ts.get_realtime_quotes(self.colum)
+            self.realData=self.realData[['code','name', 'open','pre_close','price','high','low']]
+            print("实时数据",self.realData)
         except Exception as e:
             print(e)
-
-        # 2. 是否执行无人值守
+        # 2.合并数据
+        self.df['open']=self.realData['open']
+        self.df['pre_close']=self.realData['pre_close']
+        self.df['price']=self.realData['price']
+        self.df['high']=self.realData['high']
+        self.df['low']=self.realData['low']
+        print(self.df)
+        #3. 是否执行无人值守
         if self.TraderAlive == True:
             print("Trader working")
             table_rows = self.df.shape[0]
             table_columns= self.df.shape[1]
             for index, row in self.df.iterrows():
-                print( index, row)
+                print( index, row.values)
                 if row['选中']==True:
                     # 如果交易规则是买入, 还没有执行, 当前的价格小于等于 设置的买入价格 .则执行买入
                     if row['交易规则'] =='买入' and row['执行结果']=='nan' and row['price'] <= row['买入价格'] :
@@ -280,13 +288,13 @@ class Ui_MainWindow(object):
 
         else:
             print("Trader Sleep")
-        # 3. 是否更新表格
-        self.updateSignal.emit( realData)  # 发射信号
+        # 4. 是否更新表格
+        self.updateSignal.emit( self.realData)  # 发射信号
 
 
 
         global  timer
-        timer =threading.Timer(1, self.realtdata_timer)
+        timer =threading.Timer(10, self.realtdata_timer)
         timer.start()
     def stopRealTime(self):
         print("停止实时监测")
