@@ -9,7 +9,7 @@
 import threading
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QTableWidgetItem, QHeaderView, QLineEdit, QComboBox, QCheckBox
+from PyQt5.QtWidgets import QTableWidgetItem, QHeaderView, QLineEdit, QComboBox, QCheckBox, QAbstractItemView
 from PyQt5.QtCore import *
 import Utils
 from AddDialog import AddStockDialog
@@ -114,36 +114,39 @@ class Ui_MainWindow(object):
         self.tableWidget.horizontalHeader().setStretchLastSection(True)
         # 水平方向，表格大小拓展到适当的尺寸
         self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
         for row in range(table_rows):
             for col in range(table_columns):
-                if col in [1,2]:
-                    tableItem = QTableWidgetItem()
-                    tableItem.setTextAlignment(Qt.AlignHCenter|Qt.AlignVCenter )
-                    tableItem.setFlags( Qt.ItemIsEditable )
-                    tableItem.setText( str(self.df.loc[row][col]))
+
                 if col in [7,8,9,10]:
-                    # lineEdit= QLineEdit()
-                    # lineEdit.setText( str(self.df.loc[row][col]) )
-                    # lineEdit.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-                    # lineEdit.editingFinished.connect( self.itemEdit )
-                    # self.tableWidget.setCellWidget(row, col, lineEdit)
-                    lineEdit = QTableWidgetItem()
-                    lineEdit.setTextAlignment(Qt.AlignHCenter|Qt.AlignVCenter )
-                    # lineEdit.setFlags( Qt.ItemIsEditable )
-                    lineEdit.setText( str(self.df.loc[row][col]))
-                    self.tableWidget.setItem( row, col, lineEdit)
+                    lineEdit= QLineEdit()
+                    lineEdit.setText( str(self.df.loc[row][col]) )
+                    lineEdit.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+                    lineEdit.editingFinished.connect( self.itemEdit )
+                    self.tableWidget.setCellWidget(row, col, lineEdit)
+
                 elif  col in [11]:
                     comBox = QComboBox()
-                    comBox.addItems(["买入", "卖出","先买后卖","先卖后买"])
+                    comBox.addItems( Utils.combobox_text )
+                    comboIndex=self.df.loc[row][col]
+                    print( comboIndex)
+                    if pd.isnull(comboIndex):
+                        comboIndex=0
+                    comBox.setCurrentIndex( comboIndex )
+                    comBox.currentIndexChanged.connect( self.comboChange )
                     self.tableWidget.setCellWidget(row, col, comBox)
 
                 elif col in [13]:
-                    # checkBox = QCheckBox()
-                    # self.tableWidget.setCellWidget(row, col, checkBox)
-                    checkBox = QTableWidgetItem()
-                    checkBox.setCheckState(QtCore.Qt.Unchecked)
-                    self.tableWidget.setItem(row, col, checkBox)
-                    # self.connect(self.tableWidget, QtCore.SIGNAL("itemClicked(QTableWidgetItem*)"), self.itemChecked)
+                    state=self.df.loc[row][col]
+                    if state != True :
+                        state=False
+                    print("state", state)
+                    checkBox = QCheckBox()
+                    checkBox.setChecked( state )
+                    checkBox.stateChanged.connect(self.checkChange )
+                    self.tableWidget.setCellWidget(row, col, checkBox)
+
                 else:
                     newItem = QTableWidgetItem(str(self.df.loc[row][col]))
                     newItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
@@ -169,10 +172,33 @@ class Ui_MainWindow(object):
                 self.tableWidget.setItem( row, col, newItem)
 
     def itemEdit(self):
-        print("编辑了")
+        curRow= self.tableWidget.currentRow()
+        curCol= self.tableWidget.currentColumn()
+        print( "编辑了 ", curRow, curCol)
+        cell = self.tableWidget.cellWidget( curRow, curCol )
+        print( type(cell), str(cell.text()))
+        self.df.iloc[ curRow, curCol]= str( cell.text())
+        print( self.df )
+        self.df.to_csv( Utils.realstock_csv, index=False)
 
-    def itemChecked(self, QTableWidgetItem):
-        print("勾选了 ")
+    def checkChange(self, state):
+        curRow = self.tableWidget.currentRow()
+        curCol = self.tableWidget.currentColumn()
+        print("选择框 ", curRow, curCol)
+        cell = self.tableWidget.cellWidget(curRow, curCol)
+        print( type(cell), cell.isChecked())
+        self.df.iloc[curRow, curCol]= cell.isChecked()
+        print(self.df)
+        self.df.to_csv( Utils.realstock_csv, index=False)
+
+    def comboChange(self, index):
+        curRow = self.tableWidget.currentRow()
+        curCol = self.tableWidget.currentColumn()
+        print("列表框 ", curRow, curCol, index )
+        cell = self.tableWidget.cellWidget(curRow, curCol)
+        print( cell.currentText( ) )
+        self.df.iloc[curRow, curCol]= index
+        self.df.to_csv( Utils.realstock_csv, index =False)
 
     def addDialogShow(self):
         print("点击了add")
