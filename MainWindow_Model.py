@@ -1,3 +1,5 @@
+import sys
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QAbstractItemView, QHeaderView, QTableWidgetItem
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -21,6 +23,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def initWindow(self):
         print("init main window")
         # self.tab = QtWidgets.QWidget()
+        _translate = QtCore.QCoreApplication.translate
+
+        self.setWindowTitle(_translate("MainWindow", "貔貅"))
         self.tab = TradeFormWidget()
         self.tab.setObjectName("tab")
         self.tabWidget.addTab(self.tab, "")
@@ -28,7 +33,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tab_2 = RecordFormWidget()
         self.tab_2.setObjectName("tab_2")
         self.tabWidget.addTab(self.tab_2, "")
-        _translate = QtCore.QCoreApplication.translate
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "Tab 1"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "Tab 2"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("MainWindow", "监测"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "记录"))
         self.tabWidget.setCurrentIndex(0)
+
+    def closeEvent(self,event):
+        print("窗体关闭")

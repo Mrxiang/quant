@@ -9,4 +9,5 @@ combobox_text =["无操作","买入", "卖出","先买后卖","先卖后买"]
 
 
 # Record
-record_column = ['时间','code', 'name', 'price', '操作', '数量']
+record_csv='./record.csv'
+record_column = ['时间','code', 'name','操作', 'price',  '数量','金额','状态']

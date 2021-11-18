@@ -1,7 +1,10 @@
 import threading
+from datetime import datetime
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QHeaderView, QAbstractItemView, QLineEdit, QComboBox, QCheckBox, QTableWidgetItem
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QWidget, QHeaderView, QAbstractItemView, QLineEdit, QComboBox, QCheckBox, QTableWidgetItem, \
+    QLCDNumber
 
 import Utils
 from AddDialog_Model import AddStockDialog
@@ -24,6 +27,12 @@ class TradeFormWidget(QWidget, Trade_Ui_Form):
 
 
     def initTradeForm(self):
+        self.open_time = datetime.strptime(str(datetime.now().date()) + '9:00', '%Y-%m-%d%H:%M')
+        self.close_time = datetime.strptime(str(datetime.now().date()) + '15:00', '%Y-%m-%d%H:%M')
+        # 让内容扁平化显示，颜色同窗口标题颜色相同
+        self.lcdNumber.setSegmentStyle(QLCDNumber.Flat)
+        self.lcdNumber.setDigitCount(8)
+        self.lcdNumber.display( datetime.now().strftime('%Y-%m-%d %H:%M:%S') )
         # 绑定事件
         self.pushButton.clicked.connect(self.addDialogShow)
         self.pushButton_2.clicked.connect(self.delete)
@@ -33,7 +42,8 @@ class TradeFormWidget(QWidget, Trade_Ui_Form):
         # add you code here
         print("填入数据")
         try:
-            self.df = pd.read_csv(Utils.realstock_csv)
+            # code 列中的数据读取为str
+            self.df = pd.read_csv(Utils.realstock_csv, dtype={'code':str})
         except Exception as e:
             print(e)
             self.df = pd.DataFrame(columns=Utils.column)
@@ -101,9 +111,16 @@ class TradeFormWidget(QWidget, Trade_Ui_Form):
 
         for row in range(self.df.shape[0]):
             for col in range(2, 7):
-                newItem = QTableWidgetItem(str(self.df.loc[row][col]))
-                newItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
-                self.tableWidget.setItem(row, col, newItem)
+                if col in [2, 3, 5, 6]:
+                    item = self.tableWidget.item(row, col)
+                    item.setText( str(self.df.loc[row][col]))
+                    # newItem = QTableWidgetItem(str(self.df.loc[row][col]))
+                    # self.tableWidget.setItem(row, col, newItem)
+                else:
+                    item = self.tableWidget.item(row, col)
+                    # item.setBackground( QColor(100,100,100))
+                    item.setText( str(self.df.loc[row][col]))
+                    item.setBackground( QColor(192,192,192) )
 
     def itemEdit(self):
         curRow = self.tableWidget.currentRow()
@@ -183,25 +200,25 @@ class TradeFormWidget(QWidget, Trade_Ui_Form):
 
     def realtdata_timer(self):
         print("每秒钟运行检测")
-        # self.dateEdit.setDate( QDate.currentDate())
-        # self.timeEdit.setTime(QTime.currentTime())
-        # self.df=pd.read_csv(Utils.realstock_csv)
+        self.lcdNumber.display( datetime.now().strftime('%Y-%m-%d %H:%M:%S') )
+
         # 1.获取数据
-        self.colum = [str(x) for x in self.df['code'].tolist()]
-        print(self.colum)
+        self.codelist = self.df['code'].tolist()
+        print(self.codelist)
         try:
-            self.realData = ts.get_realtime_quotes(self.colum)
+            self.realData = ts.get_realtime_quotes(self.codelist)
             self.realData = self.realData[['code', 'name', 'open', 'pre_close', 'price', 'high', 'low']]
             print("1.获取实时数据", self.realData)
+            # 2. 更新df
+            print("2.更新df")
+            self.df['open'] = self.realData['open']
+            self.df['pre_close'] = self.realData['pre_close']
+            self.df['price'] = self.realData['price']
+            self.df['high'] = self.realData['high']
+            self.df['low'] = self.realData['low']
         except Exception as e:
-            print(e)
-        # 2. 更新df
-        print("2.更新df")
-        self.df['open'] = self.realData['open']
-        self.df['pre_close'] = self.realData['pre_close']
-        self.df['price'] = self.realData['price']
-        self.df['high'] = self.realData['high']
-        self.df['low'] = self.realData['low']
+            print("error",e)
+
         # 3. 是否执行无人值守
         if self.TraderAlive == True:
             print("3.实时交易 working")
@@ -232,7 +249,9 @@ class TradeFormWidget(QWidget, Trade_Ui_Form):
         else:
             print("3.实时交易 Sleep")
         # 4. 是否更新表格
-        self.updateSignal.emit()  # 发射信号
+        print("4. 是否更新表格")
+        if  datetime.now()> self.open_time and datetime.now()<self.close_time :
+            self.updateSignal.emit()  # 发射信号
 
         global timer
         timer = threading.Timer(Utils.ticktime, self.realtdata_timer)
