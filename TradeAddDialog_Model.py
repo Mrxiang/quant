@@ -2,7 +2,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QDialog, QCompleter
 
 import Utils
-from AddDialog_UI import Ui_Dialog
+from TradeAddDialog_UI import Ui_Dialog
 import tushare as ts
 import pandas as pd
 

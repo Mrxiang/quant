@@ -1,18 +1,19 @@
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog
 
-from TradeDialog_UI import Trade_Ui_Dialog
+from MainWindow_Model import *
+from RecordAddDialog_UI import RecordAdd_Ui_Dilaog
 from Trader import Trader
 
 
-class TradeDialog(QDialog,Trade_Ui_Dialog):
+class RecordAddDilaog(QDialog,RecordAdd_Ui_Dilaog):
 
-    def __init__(self, tabIndex, data):
-        super(TradeDialog,self).__init__()
+    def __init__(self, tabIndex, data, root):
+        super(RecordAddDilaog,self).__init__()
+        self.root = root
         self.setupUi(self)
         self.setWindowTitle("自定义消息对话框：登录窗口")
-
-        # init TradeDialog
+        # init RecordAddDilaog
         self.tabWidget.setCurrentIndex( tabIndex)
         print( data )
         # self.pushButton.clicked.connect( self.sure )
@@ -42,7 +43,7 @@ class TradeDialog(QDialog,Trade_Ui_Dialog):
         self.name = self.lineEdit_2.text()
         self.price = self.lineEdit_3.text()
         self.amount = self.lineEdit_4.text()
-        self.trader = Trader()
+        self.trader = Trader(self.root)
         self.trader.buy(self.code,self.name, self.price, self.amount)
         self.close()
     def sureSell(self):
@@ -51,6 +52,6 @@ class TradeDialog(QDialog,Trade_Ui_Dialog):
         self.name = self.lineEdit_6.text()
         self.price = self.lineEdit_7.text()
         self.amount = self.lineEdit_8.text()
-        self.trader = Trader()
+        self.trader = Trader(self.root)
         self.trader.sell(self.code, self.name, self.price, self.amount)
         self.close()

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QLCDNumber, QAbstractItemView, QHeaderView, QTableWidgetItem
 
 import Utils
@@ -8,11 +8,16 @@ from RecordFormWidget_UI import Record_Ui_Form
 import pandas as pd
 
 class RecordFormWidget(QWidget, Record_Ui_Form):
-    def __init__(self, parent=None):
-        super(RecordFormWidget, self).__init__(parent)
+    # updateSignal = pyqtSignal()  #pyqt5信号要定义为类属性
+
+    def __init__(self, root):
+        super(RecordFormWidget, self).__init__(root)
+        self.root = root
         self.setupUi(self)
         self.initRecordForm()
     def initRecordForm(self):
+        # self.updateSignal.connect(self.updateRecordForm)
+
         self.lcdNumber.setSegmentStyle(QLCDNumber.Flat)
         self.lcdNumber.setDigitCount(8)
         self.lcdNumber.display( datetime.now().strftime('%Y-%m-%d %H:%M:%S') )
@@ -43,3 +48,21 @@ class RecordFormWidget(QWidget, Record_Ui_Form):
                 newItem = QTableWidgetItem(str(self.df.loc[row][col]))
                 newItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
                 self.tableWidget.setItem(row, col, newItem)
+
+
+    def updateRecordForm(self, df ):
+        print("更新record 表单")
+        self.lcdNumber.display( datetime.now().strftime('%Y-%m-%d %H:%M:%S') )
+        self.df = df
+        print("记录 ", self.df)
+        table_rows = self.df.shape[0]
+        table_columns= self.df.shape[1]
+        self.tableWidget.setRowCount( table_rows)
+        for row in range(table_rows):
+            for col in range(table_columns):
+                newItem = QTableWidgetItem(str(self.df.loc[row][col]))
+                newItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
+                self.tableWidget.setItem(row, col, newItem)
+
+
+

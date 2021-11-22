@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'TradeDialog.ui'
+# Form implementation generated from reading ui file 'RecordAddDialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.6
 #
@@ -11,7 +11,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Trade_Ui_Dialog(object):
+class RecordAdd_Ui_Dilaog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.resize(447, 380)
@@ -216,13 +216,13 @@ class Trade_Ui_Dialog(object):
         self.label_2.setText(_translate("Dialog", "name"))
         self.label_3.setText(_translate("Dialog", "price"))
         self.label_4.setText(_translate("Dialog", "amount"))
-        self.pushButton.setText(_translate("Dialog", "PushButton"))
-        self.pushButton_2.setText(_translate("Dialog", "PushButton"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("Dialog", "Tab 1"))
+        self.pushButton.setText(_translate("Dialog", "确认"))
+        self.pushButton_2.setText(_translate("Dialog", "取消"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("Dialog", "买入"))
         self.label_5.setText(_translate("Dialog", "code"))
         self.label_6.setText(_translate("Dialog", "name"))
         self.label_7.setText(_translate("Dialog", "price"))
         self.label_8.setText(_translate("Dialog", "amount"))
-        self.pushButton_3.setText(_translate("Dialog", "PushButton"))
-        self.pushButton_4.setText(_translate("Dialog", "PushButton"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("Dialog", "Tab 2"))
+        self.pushButton_3.setText(_translate("Dialog", "确认"))
+        self.pushButton_4.setText(_translate("Dialog", "取消"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("Dialog", "卖出"))

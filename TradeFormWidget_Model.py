@@ -7,8 +7,8 @@ from PyQt5.QtWidgets import QWidget, QHeaderView, QAbstractItemView, QLineEdit, 
     QLCDNumber
 
 import Utils
-from AddDialog_Model import AddStockDialog
-from TradeDialog_Model import TradeDialog
+from TradeAddDialog_Model import AddStockDialog
+from RecordAddDialog_Model import RecordAddDilaog
 from TradeFormWidget_UI import Trade_Ui_Form
 import pandas as pd
 
@@ -18,17 +18,17 @@ import tushare as ts
 class TradeFormWidget(QWidget, Trade_Ui_Form):
     updateSignal = pyqtSignal()  #pyqt5信号要定义为类属性
     TraderAlive = False
-    def __init__(self, parent=None):
-        super(TradeFormWidget, self).__init__(parent)
+    def __init__(self, root):
+        super(TradeFormWidget, self).__init__(root)
+        self.root = root
         self.setupUi(self)
-
         self.initTradeForm()
         self.startRealTime()
 
 
     def initTradeForm(self):
-        self.open_time = datetime.strptime(str(datetime.now().date()) + '9:00', '%Y-%m-%d%H:%M')
-        self.close_time = datetime.strptime(str(datetime.now().date()) + '15:00', '%Y-%m-%d%H:%M')
+        self.open_time = datetime.strptime(str(datetime.now().date()) + '8:00', '%Y-%m-%d%H:%M')
+        self.close_time = datetime.strptime(str(datetime.now().date()) + '18:00', '%Y-%m-%d%H:%M')
         # 让内容扁平化显示，颜色同窗口标题颜色相同
         self.lcdNumber.setSegmentStyle(QLCDNumber.Flat)
         self.lcdNumber.setDigitCount(8)
@@ -37,8 +37,9 @@ class TradeFormWidget(QWidget, Trade_Ui_Form):
         self.pushButton.clicked.connect(self.addDialogShow)
         self.pushButton_2.clicked.connect(self.delete)
         self.pushButton_4.clicked.connect(self.startUnattend )
-        self.pushButton_5.clicked.connect(self.tradeDialogShow, 0 )
-        self.pushButton_6.clicked.connect(self.tradeDialogShow, 1 )
+        self.pushButton_5.clicked.connect(self.tradeBuyDialogShow )
+        self.pushButton_6.clicked.connect(self.tradeSellDialogShow )
+
         # add you code here
         print("填入数据")
         try:
@@ -99,7 +100,7 @@ class TradeFormWidget(QWidget, Trade_Ui_Form):
                     newItem.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
                     self.tableWidget.setItem(row, col, newItem)
 
-    def updateTableWidget(self):
+    def updateTradeForm(self):
         print("4. 刷新表格控件")
         print(self.df.shape, self.df)
         table_rows = self.df.shape[0]
@@ -110,17 +111,28 @@ class TradeFormWidget(QWidget, Trade_Ui_Form):
         self.tableWidget.setRowCount(table_rows)
 
         for row in range(self.df.shape[0]):
-            for col in range(2, 7):
+            for col in range(2, 10):
                 if col in [2, 3, 5, 6]:
                     item = self.tableWidget.item(row, col)
                     item.setText( str(self.df.loc[row][col]))
                     # newItem = QTableWidgetItem(str(self.df.loc[row][col]))
                     # self.tableWidget.setItem(row, col, newItem)
-                else:
+                elif  col in[4]:
                     item = self.tableWidget.item(row, col)
                     # item.setBackground( QColor(100,100,100))
                     item.setText( str(self.df.loc[row][col]))
-                    item.setBackground( QColor(192,192,192) )
+                    # item.setBackground( QColor(255,155,155,255) )
+                    item.setBackground( QColor(230,230,230,255) )
+                elif col in[7]:
+                    lineEditItem = self.tableWidget.cellWidget(row, col)
+                    lineEditText = lineEditItem.text()
+
+                    print( lineEditText, type(lineEditItem.text()))
+                    # if pd.isnull( self.df.loc[row][col] ) :
+                    #     lineEditItem.setStyleSheet("QLineEdit { background-color : black; color : gray; }")
+                    # else:
+                    #     textColor=255 -( float(lineEditText) -float(self.df.loc[row][4]) )/float(self.df.loc[row][4])*100
+                    #     lineEditItem.setStyleSheet("QLineEdit { background-color : red; color : gray; }")
 
     def itemEdit(self):
         curRow = self.tableWidget.currentRow()
@@ -179,21 +191,30 @@ class TradeFormWidget(QWidget, Trade_Ui_Form):
         print("停止无人值守")
         self.TraderAlive = False
 
-    def tradeDialogShow(self, tabIndex):
+    def tradeBuyDialogShow(self):
         print("点击了买入或卖出")
         curRow = self.tableWidget.currentRow()
         if curRow == -1 :
             print("未选择一行")
         else:
             rowData=self.df.loc[curRow]
-            # self.trader =Trader()
-            # self.trader.buyData( rowData)
-            self.traderDialog = TradeDialog(tabIndex, rowData)
+
+            self.traderDialog = RecordAddDilaog(0, rowData, self.root)
+            self.traderDialog.show()
+    def tradeSellDialogShow(self):
+        print("点击了买入或卖出")
+        curRow = self.tableWidget.currentRow()
+        if curRow == -1 :
+            print("未选择一行")
+        else:
+            rowData=self.df.loc[curRow]
+
+            self.traderDialog = RecordAddDilaog(1, rowData, self.root)
             self.traderDialog.show()
     def startRealTime(self):
         print("开启实时监测")
 
-        self.updateSignal.connect(self.updateTableWidget)
+        self.updateSignal.connect(self.updateTradeForm)
         global timer
         timer = threading.Timer(1, self.realtdata_timer)
         timer.start()
@@ -260,6 +281,8 @@ class TradeFormWidget(QWidget, Trade_Ui_Form):
     def stopRealTime(self):
         print("停止实时监测")
         timer.cancel()
+
+
 
     def closeEvent(self, event):
         print("退出主窗口")
